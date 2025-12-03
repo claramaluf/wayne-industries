@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Indústrias Wayne</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="https://i.imgur.com/3JqY8Vp.png" alt="Wayne Logo" class="sidebar-logo">
+                <h2>WAYNE INDUSTRIES</h2>
+                <p class="user-info" id="userInfo">Carregando...</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="recursos.html">
+                    <i class="fas fa-boxes"></i> Gerenciar Recursos
+                </a>
+                <a href="#">
+                    <i class="fas fa-users"></i> Funcionários
+                </a>
+                <a href="#">
+                    <i class="fas fa-camera"></i> Câmeras
+                </a>
+                <a href="#">
+                    <i class="fas fa-car"></i> Veículos
+                </a>
+                <a href="#">
+                    <i class="fas fa-file-alt"></i> Relatórios
+                </a>
+                <a href="#">
+                    <i class="fas fa-cog"></i> Configurações
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Sair do Sistema
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard de Segurança</h1>
+                <div class="header-stats">
+                    <div class="stat-card">
+                        <h3>Sistema</h3>
+                        <p class="stat-value" id="systemStatus">Ativo</p>
+                        <p class="stat-label">Status</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Funcionários</h3>
+                        <p class="stat-value" id="employeeCount">247</p>
+                        <p class="stat-label">Presentes</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Alertas</h3>
+                        <p class="stat-value" id="alertsCount">3</p>
+                        <p class="stat-label">Hoje</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Recursos</h3>
+                        <p class="stat-value" id="resourcesCount">156</p>
+                        <p class="stat-label">Ativos</p>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="dashboard-content">
+                <!-- Gráficos -->
+                <section class="charts-section">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> Acessos por Área</h3>
+                        <canvas id="accessChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-pie"></i> Distribuição de Recursos</h3>
+                        <canvas id="resourcesChart"></canvas>
+                    </div>
+                </section>
+                
+                <!-- Atividades Recentes -->
+                <section class="activities-section">
+                    <h3><i class="fas fa-history"></i> Atividades Recentes</h3>
+                    <div class="activities-list">
+                        <div class="activity-item">
+                            <i class="fas fa-user-check activity-icon success"></i>
+                            <div class="activity-content">
+                                <h4>Bruce Wayne acessou o Laboratório de Pesquisa</h4>
+                                <p>Hoje, 14:30 - Nível de segurança: Máximo</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-car activity-icon info"></i>
+                            <div class="activity-content">
+                                <h4>Batmóvel em manutenção programada</h4>
+                                <p>Hoje, 13:45 - Previsão de término: 18:00</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-exclamation-triangle activity-icon warning"></i>
+                            <div class="activity-content">
+                                <h4>Tentativa de acesso não autorizado detectada</h4>
+                                <p>Hoje, 12:15 - Setor C, Bloco 7</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-box activity-icon primary"></i>
+                            <div class="activity-content">
+                                <h4>Novo equipamento adicionado ao inventário</h4>
+                                <p>Hoje, 10:20 - Scanner de segurança modelo XJ9</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Status das Áreas -->
+                <section class="areas-section">
+                    <h3><i class="fas fa-map-marker-alt"></i> Status das Áreas</h3>
+                    <div class="areas-grid">
+                        <div class="area-card secure">
+                            <h4><i class="fas fa-shield-alt"></i> Torre Wayne</h4>
+                            <p>Status: Seguro</p>
+                            <p>Última inspeção: Hoje, 08:00</p>
+                        </div>
+                        <div class="area-card warning">
+                            <h4><i class="fas fa-flask"></i> Laboratório de Pesquisa</h4>
+                            <p>Status: Manutenção</p>
+                            <p>Equipe técnica no local</p>
+                        </div>
+                        <div class="area-card secure">
+                            <h4><i class="fas fa-warehouse"></i> Armazém Principal</h4>
+                            <p>Status: Seguro</p>
+                            <p>12 câmeras ativas</p>
+                        </div>
+                        <div class="area-card secure">
+                            <h4><i class="fas fa-garage"></i> Garagem de Veículos</h4>
+                            <p>Status: Seguro</p>
+                            <p>7 veículos presentes</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

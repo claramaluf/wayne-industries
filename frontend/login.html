@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Indústrias Wayne</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <img src="https://i.imgur.com/3JqY8Vp.png" alt="Wayne Enterprises Logo" class="login-logo">
+            <h1>INDÚSTRIAS WAYNE</h1>
+            <p class="login-subtitle">Sistema de Gerenciamento de Segurança</p>
+        </div>
+        
+        <div class="login-form-container">
+            <form id="loginForm" class="login-form">
+                <h2><i class="fas fa-user-shield"></i> Controle de Acesso</h2>
+                
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Usuário:</label>
+                    <input type="text" id="username" name="username" placeholder="Digite seu usuário" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Senha:</label>
+                    <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userType"><i class="fas fa-id-card"></i> Tipo de Usuário:</label>
+                    <select id="userType" name="userType" required>
+                        <option value="">Selecione o tipo de usuário</option>
+                        <option value="funcionario">Funcionário</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="admin">Administrador de Segurança</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-login-submit">
+                    <i class="fas fa-sign-in-alt"></i> Acessar Sistema
+                </button>
+                
+                <div class="login-info">
+                    <p><strong>Credenciais de Teste:</strong></p>
+                    <p>Usuário: <code>bruce.wayne</code> | Senha: <code>batman123</code> | Tipo: Administrador</p>
+                    <p>Usuário: <code>lucius.fox</code> | Senha: <code>wayne2024</code> | Tipo: Gerente</p>
+                </div>
+            </form>
+            
+            <div class="login-side">
+                <h3><i class="fas fa-info-circle"></i> Níveis de Acesso</h3>
+                <div class="access-level">
+                    <h4><i class="fas fa-user"></i> Funcionário</h4>
+                    <p>Acesso básico ao sistema e visualização de recursos.</p>
+                </div>
+                <div class="access-level">
+                    <h4><i class="fas fa-user-tie"></i> Gerente</h4>
+                    <p>Controle de recursos e relatórios de equipe.</p>
+                </div>
+                <div class="access-level">
+                    <h4><i class="fas fa-user-secret"></i> Administrador</h4>
+                    <p>Acesso completo ao sistema e configurações de segurança.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-footer">
+            <a href="index.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Voltar para Home
+            </a>
+            <p class="security-warning">
+                <i class="fas fa-exclamation-triangle"></i> Este sistema é monitorado 24/7 pelo Departamento de Segurança das Indústrias Wayne.
+            </p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
