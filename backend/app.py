@@ -20,25 +20,25 @@ usuarios_db = [
         'nome': 'Bruce Wayne',
         'tipo': 'admin',
         'email': 'bruce@wayne-enterprises.com',
-        'data_cadastro': '2024-01-15'
+        'data_cadastro': '1940-05-27'
     },
     {
         'id': 2,
         'username': 'lucius.fox',
-        'senha': 'wayne2024',
+        'senha': 'wayne2025',
         'nome': 'Lucius Fox',
         'tipo': 'gerente',
         'email': 'lucius.fox@wayne-enterprises.com',
-        'data_cadastro': '2024-02-20'
+        'data_cadastro': '1979-01-01'
     },
     {
         'id': 3,
         'username': 'funcionario',
         'senha': 'wayne123',
-        'nome': 'Funcionário Teste',
+        'nome': 'Funcionário',
         'tipo': 'funcionario',
         'email': 'funcionario@wayne-enterprises.com',
-        'data_cadastro': '2024-03-10'
+        'data_cadastro': '2025-12-11'
     }
 ]
 
@@ -52,7 +52,7 @@ recursos_db = [
         'descricao': 'Veículo blindado de alta velocidade',
         'localizacao': 'Garagem Subterrânea A',
         'status': 'ativo',
-        'ultima_manutencao': '2024-05-15',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Bruce Wayne'
     },
     {
@@ -63,7 +63,7 @@ recursos_db = [
         'descricao': 'Scanner corporal de última geração',
         'localizacao': 'Entrada Principal',
         'status': 'ativo',
-        'ultima_manutencao': '2024-05-14',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Lucius Fox'
     },
     {
@@ -74,7 +74,7 @@ recursos_db = [
         'descricao': 'Câmera com visão noturna térmica',
         'localizacao': 'Perímetro Norte',
         'status': 'ativo',
-        'ultima_manutencao': '2024-05-13',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Alfred Pennyworth'
     },
     {
@@ -85,7 +85,7 @@ recursos_db = [
         'descricao': 'Aeronave stealth de combate',
         'localizacao': 'Hangar Secreto',
         'status': 'manutencao',
-        'ultima_manutencao': '2024-05-10',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Bruce Wayne'
     },
     {
@@ -96,7 +96,7 @@ recursos_db = [
         'descricao': 'Sistema de processamento de dados avançado',
         'localizacao': 'Sala de Controle',
         'status': 'ativo',
-        'ultima_manutencao': '2024-05-12',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Lucius Fox'
     },
     {
@@ -107,7 +107,7 @@ recursos_db = [
         'descricao': 'Sinalizador de emergência',
         'localizacao': 'Telhado da Torre Wayne',
         'status': 'ativo',
-        'ultima_manutencao': '2024-05-11',
+        'ultima_manutencao': '2025-12-11',
         'responsavel': 'Comissário Gordon'
     }
 ]
@@ -248,7 +248,7 @@ def encerrar_sessao(session_id):
 @app.route('/')
 def pagina_inicial():
     """Serve a página inicial"""
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(app.static_folder, 'login.html')
 
 @app.route('/<path:arquivo>')
 def servir_arquivos(arquivo):
@@ -427,7 +427,7 @@ def criar_novo_recurso():
     
     # Verificar permissões
     usuario = buscar_usuario_por_id(usuario_id)
-    if usuario['tipo'] not in ['gerente', 'admin']:
+    if usuario['tipo'] != 'admin':
         return jsonify({'erro': 'Permissão insuficiente'}), 403
     
     dados = request.json
@@ -469,7 +469,7 @@ def atualizar_recurso_api(recurso_id):
     
     # Verificar permissões
     usuario = buscar_usuario_por_id(usuario_id)
-    if usuario['tipo'] not in ['gerente', 'admin']:
+    if usuario['tipo'] != 'admin':
         return jsonify({'erro': 'Permissão insuficiente'}), 403
     
     dados = request.json
@@ -501,10 +501,10 @@ def excluir_recurso(recurso_id):
     if not usuario_id:
         return jsonify({'erro': 'Não autorizado'}), 401
     
-    # Verificar permissões - APENAS ADMIN
+   # Verificar permissões
     usuario = buscar_usuario_por_id(usuario_id)
     if usuario['tipo'] != 'admin':
-        return jsonify({'erro': 'Apenas administradores podem excluir recursos'}), 403
+        return jsonify({'erro': 'Permissão insuficiente'}), 403
     
     # Buscar recurso antes de excluir (para log)
     recurso = buscar_recurso_por_id(recurso_id)
@@ -568,7 +568,7 @@ if __name__ == '__main__':
     print(f"Recursos cadastrados: {len(recursos_db)}")
     print("\nCredenciais para teste:")
     print("1. Admin: bruce.wayne / batman123")
-    print("2. Gerente: lucius.fox / wayne2024")
+    print("2. Gerente: lucius.fox / wayne2025")
     print("3. Funcionário: funcionario / wayne123")
     print("="*60 + "\n")
     
