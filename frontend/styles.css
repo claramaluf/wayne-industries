@@ -831,7 +831,7 @@ tr:not(.admin) td:last-child button {
 }
 
 .btn-secondary {
-    background-color: var(--wayne-gray-light);
+    background-color: var(--wayne-black);
     color: var(--wayne-white);
     padding: 12px 25px;
     border-radius: var(--border-radius);
