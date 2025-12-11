@@ -362,7 +362,8 @@ def criar_novo_recurso():
 @app.route('/api/recursos/<int:recurso_id>', methods=['PUT'])
 def atualizar_recurso_api(recurso_id):
     try:
-        dados = request.json
+        # Garante que os dados sejam lidos corretamente
+        dados = request.get_json() 
         
         if not dados:
             return jsonify({'erro': 'Dados de atualização são obrigatórios'}), 400
@@ -384,6 +385,7 @@ def atualizar_recurso_api(recurso_id):
             }), 404
             
     except Exception as e:
+        print(f"Erro no PUT de recurso: {str(e)}") # Adicionado log para debug
         return jsonify({
             'sucesso': False,
             'erro': f'Erro interno: {str(e)}'

@@ -262,11 +262,15 @@ window.renderResourcesTable = function(recursos) {
 async function abrirModalEditar(recursoId) {
     if (!verificarAdmin()) return;
     
+    // Procura o recurso na lista de dados já carregados
     const recurso = window.recursosData.find(r => r.id === recursoId);
     if (!recurso) {
         alert('Recurso não encontrado');
         return;
     }
+    
+    // Remove qualquer modal de edição anterior
+    fecharModalEditar();
     
     console.log(`Abrindo modal para editar recurso: ${recurso.nome}`);
     
@@ -279,6 +283,7 @@ async function abrirModalEditar(recursoId) {
                 </div>
                 <div class="modal-body">
                     <form id="editResourceForm">
+                        <input type="hidden" id="editResourceId" value="${recurso.id}">
                         <div class="form-group">
                             <label for="editResourceName">Nome do Recurso:</label>
                             <input type="text" id="editResourceName" value="${recurso.nome.replace(/"/g, '&quot;')}" required>
@@ -330,13 +335,17 @@ async function abrirModalEditar(recursoId) {
         </div>
     `;
     
+    // Adiciona o modal ao corpo do documento
     const modalContainer = document.createElement('div');
     modalContainer.innerHTML = modalHTML;
     document.body.appendChild(modalContainer.firstElementChild);
     
+    // Adiciona o listener de submit APÓS o modal ser injetado
     document.getElementById('editResourceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        await salvarEdicaoRecurso(recursoId);
+        // Usa o ID do campo hidden para garantir o ID correto
+        const id = parseInt(document.getElementById('editResourceId').value); 
+        await salvarEdicaoRecurso(id);
     });
 }
 
@@ -352,12 +361,18 @@ async function salvarEdicaoRecurso(recursoId) {
             responsavel: document.getElementById('editResourceResponsavel').value
         };
         
+        // Remove campos vazios se for o caso
+        Object.keys(dadosAtualizacao).forEach(key => dadosAtualizacao[key] === '' && delete dadosAtualizacao[key]);
+        
+        console.log(`Dados de atualização para ID ${recursoId}:`, dadosAtualizacao);
+        
         const resultado = await atualizarRecursoAPI(recursoId, dadosAtualizacao);
         
         if (resultado.sucesso) {
             alert('Recurso atualizado com sucesso');
             fecharModalEditar();
-            await carregarRecursosDaAPI();
+            // Recarrega os dados após a edição
+            await carregarRecursosDaAPI(); 
         } else {
             alert('Erro: ' + resultado.erro);
         }
@@ -382,7 +397,8 @@ async function confirmarExclusao(recursoId, nomeRecurso) {
         
         if (resultado.sucesso) {
             alert('Recurso excluído com sucesso');
-            await carregarRecursosDaAPI();
+            // Recarrega os dados após a exclusão
+            await carregarRecursosDaAPI(); 
         } else {
             alert('Erro: ' + resultado.erro);
         }
@@ -394,7 +410,8 @@ function verificarAdmin() {
     const isAdmin = userType === 'admin';
     
     if (!isAdmin) {
-        alert('Apenas administradores podem realizar esta ação');
+        // Alerta não-administradores, mas não impede a função de retornar false
+        alert('Apenas administradores podem realizar esta ação'); 
         return false;
     }
     

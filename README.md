@@ -216,3 +216,39 @@ Body:
   "localizacao": "Entrada Leste",
   "status": "ativo"
 }
+
+PUT /api/recursos/<id>
+Atualiza recurso (somente admin).
+
+DELETE /api/recursos/<id>
+Remove recurso (somente admin).
+
+GET /api/dashboard/estatisticas
+Retorna:
+recursos ativos
+recursos em manutenção
+distribuição por tipo
+últimos logs
+
+Modelos da Aplicação
+Usuário
+{
+  "id": 1,
+  "username": "bruce.wayne",
+  "nome": "Bruce Wayne",
+  "tipo": "admin"
+}
+
+Recurso
+{
+  "id": 101,
+  "nome": "Batmóvel",
+  "tipo": "veiculo",
+  "localizacao": "Garagem Subterrânea A",
+  "status": "ativo"
+}
+
+Autora
+Maria Clara Maluf
+Desenvolvedora Full Stack
+Projeto Final – Infinity School (2025)
