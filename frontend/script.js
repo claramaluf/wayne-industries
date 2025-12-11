@@ -1,12 +1,7 @@
-// script.js - SISTEMA COMPLETO
-// ========== CONFIGURAÇÕES GLOBAIS ==========
-window.recursosData = [];
-
 // ========== INTEGRAÇÃO COM API PYTHON ==========
+
 async function fazerLoginAPI(username, senha) {
     try {
-        console.log(`Tentando login para: ${username}`);
-        
         const resposta = await fetch('http://localhost:5002/api/login', {
             method: 'POST',
             headers: {
@@ -18,18 +13,13 @@ async function fazerLoginAPI(username, senha) {
         const dados = await resposta.json();
         
         if (dados.sucesso) {
-            console.log('Login realizado com sucesso');
-            
-            localStorage.setItem('token', dados.session_id);
+            // Salvar token e dados do usuário
+            localStorage.setItem('token', dados.token);
             localStorage.setItem('usuario', JSON.stringify(dados.usuario));
-            localStorage.setItem('userLoggedIn', 'true');
-            localStorage.setItem('userName', dados.usuario.nome);
-            localStorage.setItem('userType', dados.usuario.tipo);
-            localStorage.setItem('userUsername', username);
+            localStorage.setItem('session_id', dados.session_id);
             
             return { sucesso: true, usuario: dados.usuario };
         } else {
-            console.log('Login falhou:', dados.erro);
             return { sucesso: false, erro: dados.erro };
         }
     } catch (erro) {
@@ -40,8 +30,9 @@ async function fazerLoginAPI(username, senha) {
 
 async function buscarRecursosAPI(filtros = {}) {
     try {
-        console.log('Buscando recursos da API...');
+        const token = localStorage.getItem('token');
         
+        // Construir URL com filtros
         let url = 'http://localhost:5002/api/recursos';
         const parametros = [];
         
@@ -56,491 +47,48 @@ async function buscarRecursosAPI(filtros = {}) {
         const resposta = await fetch(url, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                'Authorization': `Bearer ${token}`
             }
         });
         
-        const dados = await resposta.json();
-        
-        if (dados.sucesso) {
-            console.log(dados.recursos.length + ' recursos carregados');
-            return { sucesso: true, recursos: dados.recursos, total: dados.total };
-        } else {
-            console.log('Erro ao buscar recursos:', dados.erro);
-            return { sucesso: false, erro: dados.erro };
+        if (resposta.status === 401) {
+            // Token expirado
+            localStorage.clear();
+            window.location.href = 'login.html';
+            return { sucesso: false, erro: 'Sessão expirada' };
         }
+        
+        const dados = await resposta.json();
+        return dados;
     } catch (erro) {
         console.error('Erro ao buscar recursos:', erro);
-        return { sucesso: false, erro: 'Erro de conexão com o servidor' };
+        return { sucesso: false, erro: 'Erro de conexão' };
     }
 }
 
 async function criarRecursoAPI(dadosRecurso) {
     try {
-        console.log('Criando novo recurso:', dadosRecurso.nome);
+        const token = localStorage.getItem('token');
         
         const resposta = await fetch('http://localhost:5002/api/recursos', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(dadosRecurso)
         });
         
         const dados = await resposta.json();
-        
-        if (dados.sucesso) {
-            console.log('Recurso criado com sucesso:', dados.recurso.nome);
-            return { sucesso: true, recurso: dados.recurso, mensagem: dados.mensagem };
-        } else {
-            console.log('Erro ao criar recurso:', dados.erro);
-            return { sucesso: false, erro: dados.erro };
-        }
+        return dados;
     } catch (erro) {
         console.error('Erro ao criar recurso:', erro);
-        return { sucesso: false, erro: 'Erro de conexão com o servidor' };
-    }
-}
-
-async function atualizarRecursoAPI(recursoId, dadosAtualizacao) {
-    try {
-        console.log(`Atualizando recurso ID: ${recursoId}`);
-        
-        const resposta = await fetch(`http://localhost:5002/api/recursos/${recursoId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-            },
-            body: JSON.stringify(dadosAtualizacao)
-        });
-        
-        const dados = await resposta.json();
-        
-        if (dados.sucesso) {
-            console.log('Recurso atualizado com sucesso');
-            return { sucesso: true, recurso: dados.recurso, mensagem: dados.mensagem };
-        } else {
-            console.log('Erro ao atualizar recurso:', dados.erro);
-            return { sucesso: false, erro: dados.erro };
-        }
-    } catch (erro) {
-        console.error('Erro ao atualizar recurso:', erro);
         return { sucesso: false, erro: 'Erro de conexão' };
-    }
-}
-
-async function excluirRecursoAPI(recursoId) {
-    try {
-        console.log(`Excluindo recurso ID: ${recursoId}`);
-        
-        const resposta = await fetch(`http://localhost:5002/api/recursos/${recursoId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-            }
-        });
-        
-        const dados = await resposta.json();
-        
-        if (dados.sucesso) {
-            console.log('Recurso excluído com sucesso');
-            return { sucesso: true, mensagem: dados.mensagem };
-        } else {
-            console.log('Erro ao excluir recurso:', dados.erro);
-            return { sucesso: false, erro: dados.erro };
-        }
-    } catch (erro) {
-        console.error('Erro ao excluir recurso:', erro);
-        return { sucesso: false, erro: 'Erro de conexão' };
-    }
-}
-
-// ========== FUNÇÃO PARA RENDERIZAR TABELA ==========
-window.renderResourcesTable = function(recursos) {
-    const tableBody = document.getElementById('resourcesTableBody');
-    if (!tableBody) return;
-    
-    console.log(`Renderizando ${recursos.length} recursos na tabela`);
-    
-    tableBody.innerHTML = '';
-    
-    if (recursos.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align: center; padding: 40px; color: var(--wayne-gray-light);">
-                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    <h4>Nenhum recurso encontrado</h4>
-                    <p>Tente ajustar os filtros ou adicionar novos recursos</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    const userType = localStorage.getItem('userType');
-    const isAdmin = userType === 'admin';
-    
-    recursos.forEach(recurso => {
-        const row = document.createElement('tr');
-        
-        let statusClass = '';
-        let statusIcon = '';
-        let statusText = '';
-        
-        switch(recurso.status) {
-            case 'ativo':
-                statusClass = 'status-active';
-                statusIcon = 'fas fa-check-circle';
-                statusText = 'Ativo';
-                break;
-            case 'manutencao':
-                statusClass = 'status-maintenance';
-                statusIcon = 'fas fa-tools';
-                statusText = 'Manutenção';
-                break;
-            case 'inativo':
-                statusClass = 'status-inactive';
-                statusIcon = 'fas fa-times-circle';
-                statusText = 'Inativo';
-                break;
-            default:
-                statusClass = 'status-unknown';
-                statusIcon = 'fas fa-question-circle';
-                statusText = 'Desconhecido';
-        }
-        
-        const ultimaInspecao = recurso.ultima_manutencao || recurso.data_cadastro || 'N/A';
-        
-        const tipoTraduzido = {
-            'equipamento': 'Equipamento',
-            'veiculo': 'Veículo',
-            'dispositivo': 'Dispositivo',
-            'tecnologia': 'Tecnologia'
-        }[recurso.tipo] || recurso.tipo;
-        
-        row.innerHTML = `
-            <td>#${recurso.id}</td>
-            <td>
-                <strong>${recurso.nome}</strong>
-                ${recurso.descricao ? `<br><small style="color: var(--wayne-gray-light); display: block; margin-top: 5px;">${recurso.descricao}</small>` : ''}
-            </td>
-            <td><span class="resource-type">${tipoTraduzido}</span></td>
-            <td>${recurso.localizacao}</td>
-            <td>
-                <span class="status-badge ${statusClass}">
-                    <i class="${statusIcon}"></i> ${statusText}
-                </span>
-            </td>
-            <td>${ultimaInspecao}</td>
-            <td class="actions-cell">
-                ${isAdmin ? `
-                <button class="btn-action edit" onclick="abrirModalEditar(${recurso.id})" title="Editar recurso">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button class="btn-action delete" onclick="confirmarExclusao(${recurso.id}, '${recurso.nome.replace(/'/g, "\\'")}')" title="Excluir recurso">
-                    <i class="fas fa-trash"></i> Excluir
-                </button>
-                ` : `
-                <span style="color: var(--wayne-gray-light); font-size: 0.9rem;">
-                    Apenas para administradores
-                </span>
-                `}
-            </td>
-        `;
-        
-        tableBody.appendChild(row);
-    });
-    
-    console.log('Tabela renderizada com sucesso');
-};
-
-// ========== FUNÇÕES PARA AÇÕES ==========
-async function abrirModalEditar(recursoId) {
-    if (!verificarAdmin()) return;
-    
-    // Procura o recurso na lista de dados já carregados
-    const recurso = window.recursosData.find(r => r.id === recursoId);
-    if (!recurso) {
-        alert('Recurso não encontrado');
-        return;
-    }
-    
-    // Remove qualquer modal de edição anterior
-    fecharModalEditar();
-    
-    console.log(`Abrindo modal para editar recurso: ${recurso.nome}`);
-    
-    const modalHTML = `
-        <div id="editModal" class="modal" style="display: flex;">
-            <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header">
-                    <h2><i class="fas fa-edit"></i> Editar Recurso</h2>
-                    <span class="close-modal" onclick="fecharModalEditar()">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <form id="editResourceForm">
-                        <input type="hidden" id="editResourceId" value="${recurso.id}">
-                        <div class="form-group">
-                            <label for="editResourceName">Nome do Recurso:</label>
-                            <input type="text" id="editResourceName" value="${recurso.nome.replace(/"/g, '&quot;')}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceType">Tipo:</label>
-                            <select id="editResourceType" required>
-                                <option value="equipamento" ${recurso.tipo === 'equipamento' ? 'selected' : ''}>Equipamento</option>
-                                <option value="veiculo" ${recurso.tipo === 'veiculo' ? 'selected' : ''}>Veículo</option>
-                                <option value="dispositivo" ${recurso.tipo === 'dispositivo' ? 'selected' : ''}>Dispositivo</option>
-                                <option value="tecnologia" ${recurso.tipo === 'tecnologia' ? 'selected' : ''}>Tecnologia</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceLocation">Localização:</label>
-                            <input type="text" id="editResourceLocation" value="${recurso.localizacao.replace(/"/g, '&quot;')}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceDescription">Descrição:</label>
-                            <textarea id="editResourceDescription" rows="3">${recurso.descricao || ''}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceStatus">Status:</label>
-                            <select id="editResourceStatus" required>
-                                <option value="ativo" ${recurso.status === 'ativo' ? 'selected' : ''}>Ativo</option>
-                                <option value="manutencao" ${recurso.status === 'manutencao' ? 'selected' : ''}>Em Manutenção</option>
-                                <option value="inativo" ${recurso.status === 'inativo' ? 'selected' : ''}>Inativo</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceCategory">Categoria:</label>
-                            <input type="text" id="editResourceCategory" value="${recurso.categoria || 'Equipamento'}">
-                        </div>
-                        <div class="form-group">
-                            <label for="editResourceResponsavel">Responsável:</label>
-                            <input type="text" id="editResourceResponsavel" value="${recurso.responsavel || ''}">
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">
-                                <i class="fas fa-save"></i> Salvar Alterações
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="fecharModalEditar()">
-                                <i class="fas fa-times"></i> Cancelar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Adiciona o modal ao corpo do documento
-    const modalContainer = document.createElement('div');
-    modalContainer.innerHTML = modalHTML;
-    document.body.appendChild(modalContainer.firstElementChild);
-    
-    // Adiciona o listener de submit APÓS o modal ser injetado
-    document.getElementById('editResourceForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        // Usa o ID do campo hidden para garantir o ID correto
-        const id = parseInt(document.getElementById('editResourceId').value); 
-        await salvarEdicaoRecurso(id);
-    });
-}
-
-async function salvarEdicaoRecurso(recursoId) {
-    try {
-        const dadosAtualizacao = {
-            nome: document.getElementById('editResourceName').value,
-            tipo: document.getElementById('editResourceType').value,
-            localizacao: document.getElementById('editResourceLocation').value,
-            descricao: document.getElementById('editResourceDescription').value,
-            status: document.getElementById('editResourceStatus').value,
-            categoria: document.getElementById('editResourceCategory').value,
-            responsavel: document.getElementById('editResourceResponsavel').value
-        };
-        
-        // Remove campos vazios se for o caso
-        Object.keys(dadosAtualizacao).forEach(key => dadosAtualizacao[key] === '' && delete dadosAtualizacao[key]);
-        
-        console.log(`Dados de atualização para ID ${recursoId}:`, dadosAtualizacao);
-        
-        const resultado = await atualizarRecursoAPI(recursoId, dadosAtualizacao);
-        
-        if (resultado.sucesso) {
-            alert('Recurso atualizado com sucesso');
-            fecharModalEditar();
-            // Recarrega os dados após a edição
-            await carregarRecursosDaAPI(); 
-        } else {
-            alert('Erro: ' + resultado.erro);
-        }
-    } catch (erro) {
-        console.error('Erro ao salvar edição:', erro);
-        alert('Erro ao salvar alterações');
-    }
-}
-
-function fecharModalEditar() {
-    const modal = document.getElementById('editModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-async function confirmarExclusao(recursoId, nomeRecurso) {
-    if (!verificarAdmin()) return;
-    
-    if (confirm('Tem certeza que deseja excluir o recurso "' + nomeRecurso + '"?\n\nEsta ação não pode ser desfeita.')) {
-        const resultado = await excluirRecursoAPI(recursoId);
-        
-        if (resultado.sucesso) {
-            alert('Recurso excluído com sucesso');
-            // Recarrega os dados após a exclusão
-            await carregarRecursosDaAPI(); 
-        } else {
-            alert('Erro: ' + resultado.erro);
-        }
-    }
-}
-
-function verificarAdmin() {
-    const userType = localStorage.getItem('userType');
-    const isAdmin = userType === 'admin';
-    
-    if (!isAdmin) {
-        // Alerta não-administradores, mas não impede a função de retornar false
-        alert('Apenas administradores podem realizar esta ação'); 
-        return false;
-    }
-    
-    return true;
-}
-
-// ========== GESTÃO DE RECURSOS ==========
-async function carregarRecursosDaAPI() {
-    console.log('Carregando recursos da API...');
-    
-    const dados = await buscarRecursosAPI();
-    
-    if (dados.sucesso) {
-        window.recursosData = dados.recursos || [];
-        
-        console.log(dados.recursos.length + ' recursos carregados');
-        
-        if (typeof window.renderResourcesTable === 'function') {
-            window.renderResourcesTable(window.recursosData);
-        }
-        
-        if (document.getElementById('resourcesCount')) {
-            document.getElementById('resourcesCount').textContent = dados.total || 0;
-        }
-        
-        atualizarEstatisticasRecursos();
-    } else {
-        console.error('Erro ao carregar recursos:', dados.erro);
-    }
-}
-
-function atualizarEstatisticasRecursos() {
-    if (!window.recursosData || window.recursosData.length === 0) return;
-    
-    const equipamentos = window.recursosData.filter(r => r.tipo === 'equipamento').length;
-    const veiculos = window.recursosData.filter(r => r.tipo === 'veiculo').length;
-    const dispositivos = window.recursosData.filter(r => r.tipo === 'dispositivo').length;
-    
-    const equipamentoCount = document.querySelector('.stat-card-large:nth-child(1) .stat-value-large');
-    const veiculoCount = document.querySelector('.stat-card-large:nth-child(2) .stat-value-large');
-    const dispositivoCount = document.querySelector('.stat-card-large:nth-child(3) .stat-value-large');
-    
-    if (equipamentoCount) equipamentoCount.textContent = equipamentos;
-    if (veiculoCount) veiculoCount.textContent = veiculos;
-    if (dispositivoCount) dispositivoCount.textContent = dispositivos;
-}
-
-// ========== FILTROS ==========
-function aplicarFiltros() {
-    const tipo = document.getElementById('resourceType')?.value;
-    const status = document.getElementById('resourceStatus')?.value;
-    const busca = document.getElementById('searchResource')?.value;
-    
-    const filtros = {};
-    if (tipo) filtros.tipo = tipo;
-    if (status) filtros.status = status;
-    if (busca) filtros.busca = busca;
-    
-    carregarRecursosDaAPI();
-}
-
-// ========== MODAL DE ADICIONAR RECURSO ==========
-function configurarModalRecurso() {
-    const modal = document.getElementById('resourceModal');
-    const addResourceBtn = document.getElementById('addResourceBtn');
-    const closeModalBtns = document.querySelectorAll('.close-modal');
-    const resourceForm = document.getElementById('resourceForm');
-    
-    if (addResourceBtn) {
-        addResourceBtn.addEventListener('click', function() {
-            if (!verificarAdmin()) return;
-            if (modal) modal.style.display = 'flex';
-        });
-    }
-    
-    if (closeModalBtns) {
-        closeModalBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (modal) modal.style.display = 'none';
-            });
-        });
-    }
-    
-    if (modal) {
-        window.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    }
-    
-    if (resourceForm) {
-        resourceForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!verificarAdmin()) {
-                modal.style.display = 'none';
-                return;
-            }
-            
-            const dadosRecurso = {
-                nome: document.getElementById('resourceName').value,
-                tipo: document.getElementById('resourceTypeSelect').value,
-                descricao: document.getElementById('resourceDescription').value,
-                localizacao: document.getElementById('resourceLocation').value,
-                status: document.getElementById('resourceStatusSelect').value,
-                categoria: 'Equipamento',
-                responsavel: localStorage.getItem('userName') || 'Sistema'
-            };
-            
-            console.log('Criando novo recurso:', dadosRecurso.nome);
-            
-            const resultado = await criarRecursoAPI(dadosRecurso);
-            
-            if (resultado.sucesso) {
-                alert('Recurso criado com sucesso');
-                
-                if (modal) modal.style.display = 'none';
-                resourceForm.reset();
-                
-                await carregarRecursosDaAPI();
-            } else {
-                alert('Erro: ' + resultado.erro);
-            }
-        });
     }
 }
 
 // ========== SISTEMA DE LOGIN ==========
+
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async function(e) {
@@ -550,29 +98,154 @@ if (loginForm) {
         const password = document.getElementById('password').value;
         const userType = document.getElementById('userType').value;
         
+        // Usar API Python
         const resultado = await fazerLoginAPI(username, password);
         
         if (resultado.sucesso) {
+            // Verificar tipo de usuário
             if (userType && resultado.usuario.tipo !== userType) {
-                alert('Tipo de usuário incorreto. Você é um ' + resultado.usuario.tipo + '.');
+                alert(`Tipo de usuário incorreto. Você é um ${resultado.usuario.tipo}.`);
                 return;
             }
             
+            // Salvar dados ESSENCIAIS
             localStorage.setItem('userLoggedIn', 'true');
             localStorage.setItem('userName', resultado.usuario.nome);
             localStorage.setItem('userType', resultado.usuario.tipo);
             localStorage.setItem('userUsername', username);
             
-            console.log('Login realizado como: ' + resultado.usuario.tipo);
+            console.log(`Login realizado como: ${resultado.usuario.tipo}`);
             
+            // Redirecionar
             window.location.href = 'dashboard.html';
         } else {
-            alert('Erro no login: ' + (resultado.erro || 'Credenciais inválidas'));
+            alert(`Erro no login: ${resultado.erro || 'Credenciais inválidas'}`);
         }
     });
 }
 
+// ========== CONTROLE DE PERMISSÕES ==========
+
+function verificarPermissoesAdmin() {
+    console.log('INICIANDO VERIFICAÇÃO DE PERMISSÕES');
+    
+    // 1. Pega tipo do usuário
+    const userType = localStorage.getItem('userType');
+    console.log('Tipo de usuário:', userType);
+    
+    // 2. Verifica se é admin (APENAS admin tem acesso)
+    const isAdmin = userType === 'admin';
+    console.log('É administrador?', isAdmin);
+    
+    // 3. Lista de tipos que NÃO podem ver gerenciamento
+    const tiposSemAcesso = ['funcionario', 'gerente'];
+    const naoPodeVer = tiposSemAcesso.includes(userType);
+    
+    // 4. Botões com data-admin-only
+    const elementosAdmin = document.querySelectorAll('[data-admin-only]');
+    console.log(`Encontrados ${elementosAdmin.length} elementos restritos`);
+    
+    elementosAdmin.forEach((elemento, index) => {
+        console.log(`   Botão ${index + 1}: ${elemento.textContent.trim()}`);
+        
+        if (isAdmin) {
+            elemento.style.display = 'flex';
+            elemento.style.visibility = 'visible';
+            elemento.style.opacity = '1';
+            console.log(`      VISÍVEL (admin)`);
+        } else {
+            elemento.style.display = 'none';
+            elemento.style.visibility = 'hidden';
+            elemento.style.opacity = '0';
+            console.log(`      OCULTO (${userType})`);
+        }
+    });
+    
+    // 5. Seção inteira de gerenciamento de recursos
+    const secaoGerenciamento = document.querySelector('.resources-section');
+    if (secaoGerenciamento && naoPodeVer) {
+        secaoGerenciamento.style.display = 'none';
+        console.log('Seção de gerenciamento OCULTA');
+    }
+    
+    // 6. Esconder coluna "Ações" da tabela
+    if (!isAdmin) {
+        console.log('Ocultando coluna "Ações"...');
+        
+        // Cabeçalho "Ações"
+        document.querySelectorAll('th').forEach(th => {
+            if (th.textContent.includes('Ações') || th.textContent.includes('Ações') || th.textContent.includes('Açoes')) {
+                th.style.display = 'none';
+                console.log('   Cabeçalho "Ações" ocultado');
+            }
+        });
+        
+    // Última coluna de cada linha (células de ações)
+    document.querySelectorAll('tbody tr').forEach((tr, index) => {
+        const ultimaCelula = tr.lastElementChild;
+        if (ultimaCelula) {
+            ultimaCelula.style.display = 'none';
+            if (index === 0) console.log('   Células de ações ocultadas');
+        }
+    });
+        }
+    
+    // 7. Aviso para não-administradores (APENAS NA PÁGINA DE RECURSOS)
+    const avisoAntigo = document.getElementById('avisoAdmin');
+    if (avisoAntigo) avisoAntigo.remove();
+    
+    // Verificar se estamos na página de recursos
+    const isRecursosPage = window.location.pathname.includes('recursos.html');
+    
+    if (!isAdmin && userType && isRecursosPage) {
+        console.log('⚠️ Criando aviso de acesso restrito...');
+        
+        const aviso = document.createElement('div');
+        aviso.id = 'avisoAdmin';
+        aviso.style.cssText = `
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 20px 25px;
+            margin: 25px 0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 16px;
+            border-left: 8px solid #c62828;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+        `;
+        
+        aviso.innerHTML = `
+            <i class="fas fa-ban" style="font-size: 28px;"></i>
+            <div style="flex: 1;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+                    ⚠️ ACESSO RESTRITO
+                </div>
+                <div>
+                    Apenas <strong>ADMINISTRADORES</strong> podem gerenciar recursos.<br>
+                    <small style="opacity: 0.9;">Seu tipo de usuário: <strong style="color: #ffcc00">${userType.toUpperCase()}</strong></small>
+                </div>
+            </div>
+            <i class="fas fa-lock" style="font-size: 24px; opacity: 0.8;"></i>
+        `;
+        
+        // Insere após o header
+        const header = document.querySelector('.dashboard-header');
+        if (header) {
+            header.parentNode.insertBefore(aviso, header.nextSibling);
+            console.log('   Aviso inserido na página de recursos');
+        }
+    } else if (!isAdmin && userType && !isRecursosPage) {
+        console.log('Dashboard: Aviso de acesso restrito OMITIDO');
+    }
+    
+    console.log('VERIFICAÇÃO CONCLUÍDA');
+    return isAdmin;
+}
+
 // ========== LOGOUT ==========
+
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', function() {
@@ -581,51 +254,391 @@ if (logoutBtn) {
     });
 }
 
-// ========== INICIALIZAÇÃO ==========
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Sistema das Indústrias Wayne inicializando...');
-    
-    if (window.location.pathname.includes('recursos.html')) {
-        console.log('Página de recursos detectada');
-        
-        const applyFiltersBtn = document.getElementById('applyFilters');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', aplicarFiltros);
-        }
-        
-        const searchInput = document.getElementById('searchResource');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    aplicarFiltros();
-                }
-            });
-        }
-        
-        configurarModalRecurso();
-        
-        setTimeout(() => {
-            carregarRecursosDaAPI();
-        }, 500);
-    }
-    
-    if (localStorage.getItem('userLoggedIn')) {
-        const userInfoElements = document.querySelectorAll('#userInfo');
-        userInfoElements.forEach(element => {
-            element.textContent = localStorage.getItem('userName') + ' (' + localStorage.getItem('userType') + ')';
-        });
-        
-        console.log('Usuário logado: ' + localStorage.getItem('userName'));
-    }
-});
+// ========== VERIFICAÇÃO DE LOGIN E PERMISSÕES ==========
 
-// ========== VERIFICAÇÃO DE SEGURANÇA ==========
+// Verificar se usuário está logado nas páginas protegidas
 const protectedPages = ['dashboard.html', 'recursos.html'];
 const currentPage = window.location.pathname.split('/').pop();
 
-if (protectedPages.includes(currentPage) && !localStorage.getItem('userLoggedIn')) {
-    console.log('Usuário não autenticado, redirecionando...');
-    window.location.href = 'login.html';
+if (protectedPages.includes(currentPage)) {
+    if (!localStorage.getItem('userLoggedIn')) {
+        console.log('Usuário não logado, redirecionando...');
+        window.location.href = 'login.html';
+    } else {
+        // Atualizar informações do usuário
+        const userInfoElements = document.querySelectorAll('#userInfo');
+        userInfoElements.forEach(element => {
+            element.textContent = `${localStorage.getItem('userName')} (${localStorage.getItem('userType')})`;
+        });
+        
+        console.log(`Usuário logado: ${localStorage.getItem('userName')} (${localStorage.getItem('userType')})`);
+        
+        // Verificar permissões de admin
+    if (typeof verificarPermissoesAdmin === 'function') {
+    verificarPermissoesAdmin();
+    } else {
+    console.error('Função verificarPermissoesAdmin não encontrada!');
+       }
+    }
 }
 
-console.log('script.js carregado com sucesso');
+// ========== GESTÃO DE RECURSOS ==========
+
+// Função para carregar recursos da API
+async function carregarRecursosDaAPI() {
+    console.log('Carregando recursos da API...');
+    
+    const dados = await buscarRecursosAPI();
+    
+    if (dados.sucesso && window.renderResourcesTable) {
+        // Atualizar a variável global de recursos
+        window.recursosData = dados.recursos || [];
+        
+        console.log(`${window.recursosData.length} recursos carregados`);
+        
+        // Renderizar tabela
+        renderResourcesTable(window.recursosData);
+        
+        // Atualizar contadores
+        if (document.getElementById('resourcesCount')) {
+            document.getElementById('resourcesCount').textContent = dados.total || 0;
+        }
+        
+        // Após renderizar, verificar permissões novamente
+        verificarPermissoesAdmin();
+    }
+}
+
+// Chamar função quando página de recursos carregar
+if (window.location.pathname.includes('recursos.html')) {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Página de recursos detectada');
+        
+        // Primeiro verifica permissões
+        verificarPermissoesAdmin();
+
+        // Depois carrega dados
+        carregarRecursosDaAPI();
+    });
+}
+
+// ========== MODAL DE ADICIONAR RECURSO ==========
+
+const modal = document.getElementById('resourceModal');
+const addResourceBtn = document.getElementById('addResourceBtn');
+const closeModalBtns = document.querySelectorAll('.close-modal');
+const resourceForm = document.getElementById('resourceForm');
+
+// Abrir modal (apenas se usuário for admin)
+if (addResourceBtn) {
+    addResourceBtn.addEventListener('click', function() {
+        // Verifica permissão antes de abrir
+        const userType = localStorage.getItem('userType');
+        if (userType !== 'admin') {
+            alert('Apenas administradores podem adicionar recursos!');
+            return;
+        }
+        
+        if (modal) modal.style.display = 'flex';
+    });
+}
+
+// Fechar modal
+if (closeModalBtns) {
+    closeModalBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (modal) modal.style.display = 'none';
+        });
+    });
+}
+
+// Fechar modal clicando fora
+if (modal) {
+    window.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
+
+// Formulário de recurso
+if (resourceForm) {
+    resourceForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Verificar se usuário é admin
+        const userType = localStorage.getItem('userType');
+        if (userType !== 'admin') {
+            alert('Apenas administradores podem criar recursos!');
+            modal.style.display = 'none';
+            return;
+        }
+        
+        const dadosRecurso = {
+            nome: document.getElementById('resourceName').value,
+            tipo: document.getElementById('resourceTypeSelect').value,
+            descricao: document.getElementById('resourceDescription').value,
+            localizacao: document.getElementById('resourceLocation').value,
+            status: document.getElementById('resourceStatusSelect').value,
+            categoria: 'Equipamento'
+        };
+        
+        console.log('Criando novo recurso:', dadosRecurso.nome);
+        
+        const resultado = await criarRecursoAPI(dadosRecurso);
+        
+        if (resultado.sucesso) {
+            alert('✅ ' + resultado.mensagem);
+            modal.style.display = 'none';
+            resourceForm.reset();
+            
+            // Recarregar recursos
+            await carregarRecursosDaAPI();
+        } else {
+            alert(`Erro: ${resultado.erro || 'Não foi possível criar o recurso'}`);
+        }
+    });
+}
+
+// ========== FUNÇÕES GLOBAIS PARA AÇÕES NA TABELA ==========
+
+window.editResource = function(id) {
+    // Verifica se é admin
+    const userType = localStorage.getItem('userType');
+    if (userType !== 'admin') {
+        alert('Apenas administradores podem editar recursos!');
+        return;
+    }
+    console.log(`Editando recurso ID: ${id}`);
+    alert(`Editar recurso ID: ${id} (Funcionalidade em desenvolvimento)`);
+};
+
+window.deleteResource = function(id) {
+    // Verifica se é admin
+    const userType = localStorage.getItem('userType');
+    if (userType !== 'admin') {
+        alert('Apenas administradores podem excluir recursos!');
+        return;
+    }
+    
+    console.log(`Excluindo recurso ID: ${id}`);
+    
+    if (confirm('⚠️ Tem certeza que deseja remover este recurso?')) {
+        const index = window.recursosData.findIndex(r => r.id === id);
+        if (index > -1) {
+            window.recursosData.splice(index, 1);
+            
+            // Se tiver função de renderização, atualiza
+            if (typeof renderResourcesTable === 'function') {
+                renderResourcesTable(window.recursosData);
+            }
+            
+            alert('Recurso removido com sucesso!');
+            console.log('Recurso removido');
+        }
+    }
+};
+
+// Adiciona classe admin ao body se for administrador
+document.addEventListener('DOMContentLoaded', function() {
+    const userType = localStorage.getItem('userType');
+    if (userType === 'admin') {
+        document.body.classList.add('admin');
+    } else {
+        document.body.classList.remove('admin');
+    }
+});
+
+// ========== GRÁFICOS DO DASHBOARD ==========
+
+function inicializarGraficosDashboard() {
+    console.log('Inicializando gráficos do dashboard...');
+    
+    // 1. Gráfico de Barras - Acessos por Área
+    const accessChartCanvas = document.getElementById('accessChart');
+    if (accessChartCanvas) {
+        console.log('Criando gráfico de acessos por área...');
+        
+        const ctx = accessChartCanvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Torre Wayne', 'Laboratório', 'Armazém', 'Garagem', 'Sala de Controle', 'Área Técnica'],
+                datasets: [{
+                    label: 'Acessos nas últimas 24h',
+                    data: [45, 28, 32, 19, 24, 15],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 99, 132)',
+                        'rgb(75, 192, 192)',
+                        'rgb(255, 206, 86)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Número de Acessos'
+                        },
+                        ticks: {
+                            stepSize: 10
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Áreas da Empresa'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 2. Gráfico de Pizza - Distribuição de Recursos
+    const resourcesChartCanvas = document.getElementById('resourcesChart');
+    if (resourcesChartCanvas) {
+        console.log('Criando gráfico de distribuição de recursos...');
+        
+        const ctx2 = resourcesChartCanvas.getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: ['Equipamentos', 'Veículos', 'Tecnologia', 'Ferramentas', 'Mobiliário', 'Segurança'],
+                datasets: [{
+                    label: 'Distribuição de Recursos',
+                    data: [35, 20, 18, 12, 10, 5],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 206, 86)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)',
+                        'rgb(255, 159, 64)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    title: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    console.log('Gráficos do dashboard inicializados');
+}
+
+// ========== ATUALIZAÇÃO DE DADOS DO DASHBOARD ==========
+
+async function atualizarDadosDashboard() {
+    try {
+        console.log('Atualizando dados do dashboard...');
+        
+        // Simular dados da API
+        // Em produção, você faria chamadas reais à API
+        const dadosDashboard = {
+            sistema: 'Ativo',
+            funcionarios: 247,
+            alertas: 3,
+            recursos: 156
+        };
+        
+        // Atualizar os cards
+        document.getElementById('systemStatus').textContent = dadosDashboard.sistema;
+        document.getElementById('employeeCount').textContent = dadosDashboard.funcionarios;
+        document.getElementById('alertsCount').textContent = dadosDashboard.alertas;
+        document.getElementById('resourcesCount').textContent = dadosDashboard.recursos;
+        
+        console.log('Dados do dashboard atualizados');
+    } catch (erro) {
+        console.error('Erro ao atualizar dashboard:', erro);
+    }
+}
+
+// ========== INICIALIZAÇÃO DO DASHBOARD ==========
+
+if (window.location.pathname.includes('dashboard.html')) {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Página do dashboard detectada');
+        
+        // Atualizar dados do dashboard
+        atualizarDadosDashboard();
+        
+        // Inicializar gráficos
+        inicializarGraficosDashboard();
+        
+        // Atualizar informações do usuário
+        if (localStorage.getItem('userLoggedIn')) {
+            const userInfoElement = document.getElementById('userInfo');
+            if (userInfoElement) {
+                userInfoElement.textContent = `${localStorage.getItem('userName')} (${localStorage.getItem('userType')})`;
+            }
+        }
+    });
+}
+
+// Atualizar dados a cada 30 segundos (opcional)
+if (window.location.pathname.includes('dashboard.html')) {
+    setInterval(atualizarDadosDashboard, 30000); // 30 segundos
+}
+
+console.log('script.js carregado com sucesso!');
